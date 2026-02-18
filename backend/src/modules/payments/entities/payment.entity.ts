@@ -16,6 +16,13 @@ export enum PaymentStatus {
     REJECTED = 'rejected',
 }
 
+// para llevar un historial de cambios de estado
+export interface PaymentStatusHistory { 
+    from: PaymentStatus;
+    to: PaymentStatus;
+    changedAt: Date;
+}
+
 // Entidad principal del módulo de pagos
 export class Payment {
     id: string;
@@ -26,6 +33,7 @@ export class Payment {
     description?: string;
     status: PaymentStatus;
     receiptNote?: string; // respaldo del comprobante, opcional
+    statusHistory: PaymentStatusHistory[];
 
     constructor(
         accountId: string,
@@ -41,6 +49,8 @@ export class Payment {
         this.description = description;
         this.status = PaymentStatus.PENDING;
         this.receiptNote = undefined; // opcional
-    }
-}
+        this.statusHistory = []; // inicializamos el historial de cambios de estado
 
+    }
+
+}

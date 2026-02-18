@@ -37,7 +37,16 @@ export class PaymentsService {
             );
         }
 
+        // Registrar historial antes del cambio
+        payment.statusHistory.push({
+            from: payment.status,
+            to: status,
+            changedAt: new Date(),
+        });
+
+        // Cambiar el estado
         payment.status = status;
+
         return payment;
     }
 
