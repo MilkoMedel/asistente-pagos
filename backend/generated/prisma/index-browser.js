@@ -122,11 +122,52 @@ exports.Prisma.TransactionIsolationLevel = makeStrictEnum({
   Serializable: 'Serializable'
 });
 
-exports.Prisma.UsuarioScalarFieldEnum = {
+exports.Prisma.UserScalarFieldEnum = {
   id: 'id',
-  nombre: 'nombre',
+  name: 'name',
   email: 'email',
-  creadoEn: 'creadoEn'
+  createdAt: 'createdAt'
+};
+
+exports.Prisma.CategoryScalarFieldEnum = {
+  id: 'id',
+  name: 'name'
+};
+
+exports.Prisma.AccountScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  dueDay: 'dueDay',
+  amount: 'amount',
+  createdAt: 'createdAt',
+  userId: 'userId',
+  categoryId: 'categoryId'
+};
+
+exports.Prisma.RecurrenceRuleScalarFieldEnum = {
+  id: 'id',
+  frequency: 'frequency',
+  interval: 'interval',
+  accountId: 'accountId'
+};
+
+exports.Prisma.PaymentScalarFieldEnum = {
+  id: 'id',
+  amount: 'amount',
+  paidAt: 'paidAt',
+  status: 'status',
+  note: 'note',
+  userId: 'userId',
+  accountId: 'accountId'
+};
+
+exports.Prisma.NotificationScalarFieldEnum = {
+  id: 'id',
+  type: 'type',
+  message: 'message',
+  sentAt: 'sentAt',
+  createdAt: 'createdAt',
+  userId: 'userId'
 };
 
 exports.Prisma.SortOrder = {
@@ -139,9 +180,36 @@ exports.Prisma.QueryMode = {
   insensitive: 'insensitive'
 };
 
+exports.Prisma.NullsOrder = {
+  first: 'first',
+  last: 'last'
+};
+exports.RecurrenceFrequency = exports.$Enums.RecurrenceFrequency = {
+  DAILY: 'DAILY',
+  WEEKLY: 'WEEKLY',
+  MONTHLY: 'MONTHLY',
+  YEARLY: 'YEARLY'
+};
+
+exports.PaymentStatus = exports.$Enums.PaymentStatus = {
+  PENDING: 'PENDING',
+  PAID: 'PAID',
+  OVERDUE: 'OVERDUE',
+  REJECTED: 'REJECTED'
+};
+
+exports.NotificationType = exports.$Enums.NotificationType = {
+  PAYMENT_REMINDER: 'PAYMENT_REMINDER',
+  PAYMENT_OVERDUE: 'PAYMENT_OVERDUE'
+};
 
 exports.Prisma.ModelName = {
-  Usuario: 'Usuario'
+  User: 'User',
+  Category: 'Category',
+  Account: 'Account',
+  RecurrenceRule: 'RecurrenceRule',
+  Payment: 'Payment',
+  Notification: 'Notification'
 };
 
 /**

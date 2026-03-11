@@ -8,9 +8,92 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Usuario {
-  id       Int      @id @default(autoincrement())
-  nombre   String
-  email    String   @unique
-  creadoEn DateTime @default(now())
+model User {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  createdAt DateTime @default(now())
+
+  accounts      Account[]
+  payments      Payment[]
+  notifications Notification[]
+}
+
+model Category {
+  id   String @id @default(uuid())
+  name String
+
+  accounts Account[]
+}
+
+model Account {
+  id        String   @id @default(uuid())
+  name      String
+  dueDay    Int
+  amount    Decimal
+  createdAt DateTime @default(now())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  categoryId String?
+  category   Category? @relation(fields: [categoryId], references: [id])
+
+  recurrence RecurrenceRule?
+
+  payments Payment[]
+}
+
+model RecurrenceRule {
+  id String @id @default(uuid())
+
+  frequency RecurrenceFrequency
+  interval  Int
+
+  accountId String  @unique
+  account   Account @relation(fields: [accountId], references: [id])
+}
+
+model Payment {
+  id     String        @id @default(uuid())
+  amount Decimal
+  paidAt DateTime      @default(now())
+  status PaymentStatus
+  note   String?
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  accountId String
+  account   Account @relation(fields: [accountId], references: [id])
+}
+
+model Notification {
+  id        String           @id @default(uuid())
+  type      NotificationType
+  message   String
+  sentAt    DateTime?
+  createdAt DateTime         @default(now())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  OVERDUE
+  REJECTED
+}
+
+enum NotificationType {
+  PAYMENT_REMINDER
+  PAYMENT_OVERDUE
+}
+
+enum RecurrenceFrequency {
+  DAILY
+  WEEKLY
+  MONTHLY
+  YEARLY
 }
