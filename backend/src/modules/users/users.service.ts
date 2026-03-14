@@ -1,22 +1,21 @@
 import { Injectable } from '@nestjs/common';
-import { User, UserStatus } from './entities/user.entity';
+import { PrismaService } from 'src/database/prisma.service';
 
 @Injectable()
 export class UsersService {
-    private users: User[] = [];
 
-    create(email: string): User {
-        const user: User = {
-        id: crypto.randomUUID(),
-        email,
-        status: UserStatus.ACTIVE,
-        };
+    constructor(private prisma: PrismaService) {}
 
-        this.users.push(user);
-        return user;
+    create(name: string, email: string) {
+        return this.prisma.user.create({
+        data: {
+            name,
+            email
+        }
+        });
     }
 
-    findAll(): User[] {
-        return this.users;
+    findAll() {
+        return this.prisma.user.findMany();
     }
 }

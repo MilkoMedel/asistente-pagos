@@ -9,6 +9,8 @@ import { DatabaseModule } from './database/database.module';
 import { AccountsModule } from './modules/accounts/accounts.module';
 import { PaymentsModule } from './modules/payments/payments.module';
 
+import { PrismaModule } from './database/prisma.module';
+
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -21,6 +23,7 @@ import { PaymentsModule } from './modules/payments/payments.module';
     DatabaseModule,
     AccountsModule,
     PaymentsModule,
+    PrismaModule,
   ],
 })
 export class AppModule {}

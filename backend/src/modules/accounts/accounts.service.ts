@@ -1,23 +1,31 @@
 import { Injectable } from '@nestjs/common';
-import { Account, Currency } from './entities/account.entity';
+import { PrismaService } from 'src/database/prisma.service';
 
 @Injectable()
 export class AccountsService {
-    private accounts: Account[] = [];
 
-    create(userId: string, currency: Currency): Account {
-        const account: Account = {
-        id: crypto.randomUUID(),
-        userId,
-        balance: 0,
-        currency,
-        };
+    constructor(private prisma: PrismaService) {}
 
-        this.accounts.push(account);
-        return account;
+    create(
+        name: string,
+        dueDay: number,
+        amount: number,
+        userId: string
+    ) {
+        return this.prisma.account.create({
+        data: {
+            name,
+            dueDay,
+            amount,
+            userId
+        }
+        });
     }
 
-    findByUser(userId: string): Account[] {
-        return this.accounts.filter(a => a.userId === userId);
+    findByUser(userId: string) {
+        return this.prisma.account.findMany({
+        where: { userId }
+        });
     }
+
 }

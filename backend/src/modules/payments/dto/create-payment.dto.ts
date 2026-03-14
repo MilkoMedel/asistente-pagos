@@ -3,10 +3,13 @@ import { PaymentType } from '../entities/payment.entity';
 
 export class CreatePaymentDto {
     @IsString()
+    userId: string;
+
+    @IsString()
     accountId: string;
 
     @IsEnum(PaymentType)
-    type: PaymentType;
+    paymentType: PaymentType;
 
     @IsNumber()
     amount: number;

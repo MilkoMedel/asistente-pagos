@@ -11,9 +11,11 @@ export enum PaymentType {
 
 // Estados posibles para un pago
 export enum PaymentStatus {
-    PENDING = 'pending',
-    PAID = 'paid',
-    REJECTED = 'rejected',
+    PENDING = 'PENDING',
+    PAID = 'PAID',
+    OVERDUE = 'OVERDUE',
+    REJECTED = 'REJECTED',
+
 }
 
 // para llevar un historial de cambios de estado

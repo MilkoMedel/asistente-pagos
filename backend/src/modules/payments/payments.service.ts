@@ -1,18 +1,34 @@
 import { Injectable } from '@nestjs/common';
-import { Payment, PaymentStatus, PaymentType } from './entities/payment.entity';
+import { Payment,PaymentStatus ,PaymentType } from './entities/payment.entity';
 import { BadRequestException,NotFoundException } from '@nestjs/common';
-
+import { PrismaService } from 'src/database/prisma.service';
 @Injectable()
 export class PaymentsService {
+    
+    constructor(private prisma: PrismaService) {}
+
     // Simulación de almacenamiento en memoria para los pagos
     private payments: Payment[] = [];
 
     // Método para crear un nuevo pago
-    create(accountId: string, type: PaymentType, amount: number, description?: string) {
-        const payment = new Payment(accountId, type, amount, description);
-        this.payments.push(payment);
-        return payment;
-    }
+    async create(
+        accountId: string,
+        userId: string,
+        paymentType: PaymentType,
+        amount: number,
+        description?: string
+        ) {
+        return this.prisma.payment.create({
+            data: {
+            accountId,
+            userId,
+            paymentType,
+            amount,
+            description,
+            status: 'PENDING'
+        }
+    });
+}
 
     // Método para listar todos los pagos de una cuenta
     findAllByAccount(accountId: string) {
@@ -77,4 +93,8 @@ export class PaymentsService {
         return false;
     }
 
+    async testConnection() {
+        const users = await this.prisma.user.findMany();
+        return users;
+    }
 }

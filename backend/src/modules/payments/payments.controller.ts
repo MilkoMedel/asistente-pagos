@@ -14,7 +14,8 @@ export class PaymentsController {
     create(@Body() dto: CreatePaymentDto) {
         return this.paymentsService.create(
         dto.accountId,
-        dto.type,
+        dto.userId,
+        dto.paymentType,
         dto.amount,
         dto.description,
         );
