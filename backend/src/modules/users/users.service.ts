@@ -19,7 +19,28 @@ export class UsersService {
         });
     }
 
-    findAll() {
-        return this.prisma.user.findMany();
+    async findByEmail(email: string) {
+        return this.prisma.user.findUnique({
+            where: { email },
+            select: {
+                id: true,
+                name: true,
+                email: true,
+                password: true, 
+                createdAt: true,
+            },
+        });
+    }
+
+    // users.service.ts
+    async findAll() {
+        return this.prisma.user.findMany({
+            select: {
+            id: true,
+            name: true,
+            email: true,
+            createdAt: true,
+            },
+        });
     }
 }
