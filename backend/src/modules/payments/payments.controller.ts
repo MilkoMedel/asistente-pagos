@@ -1,47 +1,42 @@
-import { Controller, Post, Body, Get, Param, Patch } from '@nestjs/common';
+import { Controller, Post, Body, Get, Param, UseGuards } from '@nestjs/common';
 import { PaymentsService } from './payments.service';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { GetUser } from '../auth/decorators/get-user.decorator';
 import { CreatePaymentDto } from './dto/create-payment.dto';
-import { UpdatePaymentStatusDto } from './dto/update-payment-status.dto';
-import { UpdatePaymentReceiptDto } from './dto/update-payment-receipt.dto';
-
 
 @Controller('payments')
+@UseGuards(JwtAuthGuard)
 export class PaymentsController {
+
     constructor(private readonly paymentsService: PaymentsService) {}
 
-    // Endpoint para crear un pago
+    // Crear pago
     @Post()
-    create(@Body() dto: CreatePaymentDto) {
+    create(
+        @GetUser() user: any,
+        @Body() dto: CreatePaymentDto
+    ) {
         return this.paymentsService.create(
         dto.accountId,
-        dto.userId,
+        user.id, 
         dto.paymentType,
         dto.amount,
-        dto.description,
+        dto.description
         );
     }
 
-    // Endpoint para listar todos los pagos de una cuenta
+    // Listar pagos por cuenta (seguro)
     @Get(':accountId')
-    findAll(@Param('accountId') accountId: string) {
-        return this.paymentsService.findAllByAccount(accountId);
-    }
-
-    // Endpoint para actualizar el estado de un pago
-    @Patch(':id/status')
-    updateStatus(
-        @Param('id') id: string,
-        @Body() dto: UpdatePaymentStatusDto,
-        ) {
-        return this.paymentsService.updateStatus(id, dto.status);
-    }
-
-    // Endpoint para actualizar el respaldo del comprobante (receiptNote)
-    @Patch(':id/receipt')
-    updateReceipt(
-        @Param('id') id: string,
-        @Body() dto: UpdatePaymentReceiptDto,
+    findAll(
+        @Param('accountId') accountId: string,
+        @GetUser() user: any
     ) {
-        return this.paymentsService.updateReceipt(id, dto.receiptNote);
+        return this.paymentsService.findAllByAccount(accountId, user.id);
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @Post('check-overdue')
+    checkOverdue(@GetUser() user: any) {
+    return this.paymentsService.checkOverduePayments(user.id);
     }
 }

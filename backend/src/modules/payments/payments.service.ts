@@ -1,100 +1,115 @@
-import { Injectable } from '@nestjs/common';
-import { Payment,PaymentStatus ,PaymentType } from './entities/payment.entity';
-import { BadRequestException,NotFoundException } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from 'src/database/prisma.service';
+import { Prisma, PaymentStatus } from '@prisma/client';
+
 @Injectable()
 export class PaymentsService {
-    
+
     constructor(private prisma: PrismaService) {}
 
-    // Simulación de almacenamiento en memoria para los pagos
-    private payments: Payment[] = [];
-
-    // Método para crear un nuevo pago
+    // Crear pago
     async create(
         accountId: string,
         userId: string,
-        paymentType: PaymentType,
+        paymentType: string,
         amount: number,
         description?: string
-        ) {
-        return this.prisma.payment.create({
-            data: {
-            accountId,
-            userId,
-            paymentType,
-            amount,
-            description,
-            status: 'PENDING'
-        }
-    });
-}
+    ) {
 
-    // Método para listar todos los pagos de una cuenta
-    findAllByAccount(accountId: string) {
-        return this.payments.filter(p => p.accountId === accountId);
-    }
-
-    // Método para actualizar el estado de un pago
-    updateStatus(id: string, status: PaymentStatus) {
-        const payment = this.payments.find(p => p.id === id);
-
-        if (!payment) {
-            throw new NotFoundException('Payment not found');
-        }
-
-        if (payment.status === status) {
-            return payment; // no hacemos nada
-        }
-
-        if (!this.canChangeStatus(payment.status, status)) {
-            throw new BadRequestException(
-            `Cannot change status from ${payment.status} to ${status}`,
-            );
-        }
-
-        // Registrar historial antes del cambio
-        payment.statusHistory.push({
-            from: payment.status,
-            to: status,
-            changedAt: new Date(),
+        // 🔐 Validar que la cuenta pertenece al usuario
+        const account = await this.prisma.account.findUnique({
+        where: { id: accountId },
         });
 
-        // Cambiar el estado
-        payment.status = status;
+        if (!account) {
+        throw new NotFoundException('Account not found');
+        }
 
-        return payment;
+        if (account.userId !== userId) {
+        throw new ForbiddenException('Access denied');
+        }
+
+        return this.prisma.payment.create({
+        data: {
+            accountId,
+            userId,
+            paymentType: paymentType as any,
+            amount,
+            description,
+            status: PaymentStatus.PENDING
+        }
+        });
     }
 
-    // Método para actualizar el respaldo del comprobante (receiptNote)
-    updateReceipt(id: string, receiptNote?: string) {
-        const payment = this.payments.find(p => p.id === id);
+    // Obtener pagos por cuenta (seguro)
+    async findAllByAccount(accountId: string, userId: string) {
+
+        return this.prisma.payment.findMany({
+        where: {
+            accountId,
+            userId
+        }
+        });
+    }
+
+    // Marcar como pagado
+    async markAsPaid(id: string, userId: string) {
+
+        const payment = await this.prisma.payment.findUnique({
+        where: { id }
+        });
 
         if (!payment) {
-            throw new NotFoundException('Payment not found');
+        throw new NotFoundException('Payment not found');
         }
 
-        payment.receiptNote = receiptNote;
-        return payment;
-    }
-
-    // Método para validar si se puede cambiar el estado de un pago
-    private canChangeStatus(
-        current: PaymentStatus,
-        next: PaymentStatus,
-    ): boolean {
-        if (current === PaymentStatus.PENDING) {
-            return (
-                next === PaymentStatus.PAID ||
-                next === PaymentStatus.REJECTED
-            );
+        if (payment.userId !== userId) {
+        throw new ForbiddenException('Access denied');
         }
 
-        return false;
+        if (payment.status !== PaymentStatus.PENDING) {
+        throw new BadRequestException('Payment is not pending');
+        }
+
+        return this.prisma.payment.update({
+        where: { id },
+        data: {
+            status: PaymentStatus.PAID,
+            paidAt: new Date()
+        }
+        });
     }
 
-    async testConnection() {
-        const users = await this.prisma.user.findMany();
-        return users;
+    async checkOverduePayments(userId: string) {
+        const today = new Date();
+        const currentDay = today.getDate();
+        const payments = await this.prisma.payment.findMany({
+            where: {
+                userId,
+                status: 'PENDING',
+            },
+            include: {
+                account: true,
+            },
+        });
+
+        for (const payment of payments) {
+            const dueDay = payment.account.dueDay;
+
+            if (currentDay > dueDay) {
+            await this.prisma.payment.update({
+                where: { id: payment.id },
+                data: {
+                status: 'OVERDUE',
+                },
+            });
+            }
+        }
+
+        return {
+            message: 'Checked overdue payments',
+            checked: payments.length,
+        };
     }
+
 }

@@ -1,32 +1,34 @@
-import { Controller, Post, Body, Get, Param } from '@nestjs/common';
+import { Controller, Post, Body, Get, UseGuards } from '@nestjs/common';
 import { AccountsService } from './accounts.service';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { GetUser } from '../auth/decorators/get-user.decorator';
+import { User } from 'generated/prisma';
 
 @Controller('accounts')
+@UseGuards(JwtAuthGuard)
 export class AccountsController {
 
     constructor(private readonly accountsService: AccountsService) {}
 
     @Post()
     create(
-        @Body()
-        body: {
+        @GetUser() user: any,
+        @Body() body: {
         name: string;
         dueDay: number;
         amount: number;
-        userId: string;
         }
     ) {
         return this.accountsService.create(
         body.name,
         body.dueDay,
         body.amount,
-        body.userId
+        user.id // 🔐 AQUÍ está la clave
         );
     }
 
-    @Get(':userId')
-    findByUser(@Param('userId') userId: string) {
-        return this.accountsService.findByUser(userId);
+    @Get()
+    findMyAccounts(@GetUser() user: any) {
+        return this.accountsService.findByUser(user.id);
     }
-
 }

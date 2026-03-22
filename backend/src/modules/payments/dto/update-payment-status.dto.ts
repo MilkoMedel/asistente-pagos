@@ -1,5 +1,5 @@
 import { IsEnum } from 'class-validator';
-import { PaymentStatus } from '../entities/payment.entity';
+import { PaymentStatus } from '@prisma/client';
 
 // DTO para actualizar el estado de un pago
 export class UpdatePaymentStatusDto {

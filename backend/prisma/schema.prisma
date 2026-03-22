@@ -42,6 +42,7 @@ model Account {
   recurrence RecurrenceRule?
 
   payments Payment[]
+  @@index([userId])
 }
 
 model RecurrenceRule {
@@ -57,9 +58,12 @@ model RecurrenceRule {
 model Payment {
   id        String   @id @default(uuid())
   amount    Decimal
-  paymentType String
+  paymentType PaymentType
   description String?
-  paidAt    DateTime @default(now())
+
+  createdAt DateTime @default(now())
+  paidAt    DateTime?
+  
   status    PaymentStatus
   note      String?
 
@@ -68,6 +72,10 @@ model Payment {
 
   accountId String
   account   Account @relation(fields: [accountId], references: [id])
+
+  @@index([userId])
+  @@index([accountId])
+  @@index([userId, status])
 }
 
 model Notification {
@@ -98,4 +106,11 @@ enum RecurrenceFrequency {
   WEEKLY
   MONTHLY
   YEARLY
+}
+
+enum PaymentType {
+  CASH
+  CREDIT_CARD
+  DEBIT_CARD
+  TRANSFER
 }

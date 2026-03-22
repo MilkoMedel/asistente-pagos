@@ -1,15 +1,19 @@
 import { IsEnum, IsNumber, IsOptional, IsString } from 'class-validator';
-import { PaymentType } from '../entities/payment.entity';
+
+export enum PaymentTypeDto {
+    CASH = 'CASH',
+    CREDIT_CARD = 'CREDIT_CARD',
+    DEBIT_CARD = 'DEBIT_CARD',
+    TRANSFER = 'TRANSFER',
+}
 
 export class CreatePaymentDto {
-    @IsString()
-    userId: string;
 
     @IsString()
     accountId: string;
 
-    @IsEnum(PaymentType)
-    paymentType: PaymentType;
+    @IsEnum(PaymentTypeDto)
+    paymentType: PaymentTypeDto;
 
     @IsNumber()
     amount: number;
