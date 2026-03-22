@@ -1,11 +1,14 @@
 import { Injectable, BadRequestException, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from 'src/database/prisma.service';
 import { Prisma, PaymentStatus } from '@prisma/client';
-
+import { NotificationsService } from '../notifications/notifications.service';
 @Injectable()
 export class PaymentsService {
 
-    constructor(private prisma: PrismaService) {}
+    constructor(
+        private prisma: PrismaService,
+        private notificationsService: NotificationsService,
+    ) { }
 
     // Crear pago
     async create(
@@ -18,26 +21,26 @@ export class PaymentsService {
 
         // 🔐 Validar que la cuenta pertenece al usuario
         const account = await this.prisma.account.findUnique({
-        where: { id: accountId },
+            where: { id: accountId },
         });
 
         if (!account) {
-        throw new NotFoundException('Account not found');
+            throw new NotFoundException('Account not found');
         }
 
         if (account.userId !== userId) {
-        throw new ForbiddenException('Access denied');
+            throw new ForbiddenException('Access denied');
         }
 
         return this.prisma.payment.create({
-        data: {
-            accountId,
-            userId,
-            paymentType: paymentType as any,
-            amount,
-            description,
-            status: PaymentStatus.PENDING
-        }
+            data: {
+                accountId,
+                userId,
+                paymentType: paymentType as any,
+                amount,
+                description,
+                status: PaymentStatus.PENDING
+            }
         });
     }
 
@@ -45,10 +48,10 @@ export class PaymentsService {
     async findAllByAccount(accountId: string, userId: string) {
 
         return this.prisma.payment.findMany({
-        where: {
-            accountId,
-            userId
-        }
+            where: {
+                accountId,
+                userId
+            }
         });
     }
 
@@ -56,27 +59,27 @@ export class PaymentsService {
     async markAsPaid(id: string, userId: string) {
 
         const payment = await this.prisma.payment.findUnique({
-        where: { id }
+            where: { id }
         });
 
         if (!payment) {
-        throw new NotFoundException('Payment not found');
+            throw new NotFoundException('Payment not found');
         }
 
         if (payment.userId !== userId) {
-        throw new ForbiddenException('Access denied');
+            throw new ForbiddenException('Access denied');
         }
 
         if (payment.status !== PaymentStatus.PENDING) {
-        throw new BadRequestException('Payment is not pending');
+            throw new BadRequestException('Payment is not pending');
         }
 
         return this.prisma.payment.update({
-        where: { id },
-        data: {
-            status: PaymentStatus.PAID,
-            paidAt: new Date()
-        }
+            where: { id },
+            data: {
+                status: PaymentStatus.PAID,
+                paidAt: new Date()
+            }
         });
     }
 
@@ -96,13 +99,18 @@ export class PaymentsService {
         for (const payment of payments) {
             const dueDay = payment.account.dueDay;
 
-            if (currentDay > dueDay) {
-            await this.prisma.payment.update({
-                where: { id: payment.id },
-                data: {
-                status: 'OVERDUE',
-                },
-            });
+            if (currentDay > dueDay && payment.status !== 'OVERDUE') {
+                await this.prisma.payment.update({
+                    where: { id: payment.id },
+                    data: {
+                        status: 'OVERDUE',
+                    },
+                });
+
+                await this.notificationsService.createOverdueNotification(
+                    payment.userId,
+                    payment.account.name,
+                );
             }
         }
 
@@ -111,5 +119,4 @@ export class PaymentsService {
             checked: payments.length,
         };
     }
-
 }

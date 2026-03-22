@@ -11,6 +11,8 @@ import { PaymentsModule } from './modules/payments/payments.module';
 
 import { PrismaModule } from './database/prisma.module';
 
+import { SchedulerModule } from './modules/scheduler/scheduler.module';
+
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -24,6 +26,7 @@ import { PrismaModule } from './database/prisma.module';
     AccountsModule,
     PaymentsModule,
     PrismaModule,
+    SchedulerModule,
   ],
 })
 export class AppModule {}
