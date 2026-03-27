@@ -1,6 +1,6 @@
 import { Injectable, BadRequestException, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from 'src/database/prisma.service';
-import { Prisma, PaymentStatus } from '@prisma/client';
+import { PaymentStatus } from '@prisma/client';
 import { NotificationsService } from '../notifications/notifications.service';
 @Injectable()
 export class PaymentsService {
@@ -24,12 +24,39 @@ export class PaymentsService {
             where: { id: accountId },
         });
 
-        if (!account) {
-            throw new NotFoundException('Account not found');
-        }
+        if (!account) throw new NotFoundException('Account not found');
 
         if (account.userId !== userId) {
             throw new ForbiddenException('Access denied');
+        }
+
+        // 👇 construir dueDate desde dueDay
+        const now = new Date();
+
+        // último día del mes actual
+        const lastDayOfMonth = new Date(
+            now.getFullYear(),
+            now.getMonth() + 1,
+            0
+        ).getDate();
+
+        // Validar que dueDay es entre 1 y 31
+        if (account.dueDay < 1 || account.dueDay > 31) {
+            throw new BadRequestException('Invalid dueDay');
+        }
+
+        // asegurar día válido
+        const safeDay = Math.min(account.dueDay, lastDayOfMonth);
+
+        const dueDate = new Date(
+            now.getFullYear(),
+            now.getMonth(),
+            safeDay,
+        );
+
+        // si ya pasó → siguiente mes
+        if (dueDate <= now) {
+            dueDate.setMonth(dueDate.getMonth() + 1);
         }
 
         return this.prisma.payment.create({
@@ -39,7 +66,8 @@ export class PaymentsService {
                 paymentType: paymentType as any,
                 amount,
                 description,
-                status: PaymentStatus.PENDING
+                status: PaymentStatus.PENDING,
+                dueDate,
             }
         });
     }
@@ -83,13 +111,33 @@ export class PaymentsService {
         });
     }
 
+    async processOverduePaymentsBatch(): Promise<number> {
+        const now = new Date();
+
+        const result = await this.prisma.payment.updateMany({
+            where: {
+                status: PaymentStatus.PENDING,
+                dueDate: {
+                    lt: now,
+                    not: null,
+                },
+            },
+            data: {
+                status: PaymentStatus.OVERDUE,
+            },
+        });
+
+        return result.count;
+    }
+
+    // Método legacy - usar solo para testing o endpoint manual
     async checkOverduePayments(userId: string) {
         const today = new Date();
         const currentDay = today.getDate();
         const payments = await this.prisma.payment.findMany({
             where: {
                 userId,
-                status: 'PENDING',
+                status: PaymentStatus.PENDING,
             },
             include: {
                 account: true,
@@ -99,11 +147,11 @@ export class PaymentsService {
         for (const payment of payments) {
             const dueDay = payment.account.dueDay;
 
-            if (currentDay > dueDay && payment.status !== 'OVERDUE') {
+            if (currentDay > dueDay && payment.status !== PaymentStatus.OVERDUE) {
                 await this.prisma.payment.update({
                     where: { id: payment.id },
                     data: {
-                        status: 'OVERDUE',
+                        status: PaymentStatus.OVERDUE,
                     },
                 });
 
@@ -118,5 +166,22 @@ export class PaymentsService {
             message: 'Checked overdue payments',
             checked: payments.length,
         };
+    }
+
+    async findOverduePaymentsDetailed() {
+        const now = new Date();
+
+        return this.prisma.payment.findMany({
+            where: {
+                status: PaymentStatus.PENDING,
+                dueDate: {
+                    lt: now,
+                    not: null,
+                },
+            },
+            include: {
+                account: true,
+            },
+        });
     }
 }

@@ -67,6 +67,8 @@ model Payment {
   status    PaymentStatus
   note      String?
 
+  dueDate   DateTime?
+  
   userId String
   user   User @relation(fields: [userId], references: [id])
 
@@ -76,6 +78,7 @@ model Payment {
   @@index([userId])
   @@index([accountId])
   @@index([userId, status])
+  @@index([status, dueDate])
 }
 
 model Notification {
